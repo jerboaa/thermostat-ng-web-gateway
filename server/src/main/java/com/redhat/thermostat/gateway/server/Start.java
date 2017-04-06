@@ -36,15 +36,13 @@
 
 package com.redhat.thermostat.gateway.server;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Map;
-
 import org.eclipse.jetty.server.Server;
 
 import com.redhat.thermostat.gateway.common.core.Configuration;
 import com.redhat.thermostat.gateway.common.core.ConfigurationFactory;
-import com.redhat.thermostat.gateway.common.core.GlobalConfiguration;
+import com.redhat.thermostat.gateway.server.services.CoreServiceBuilder;
+import com.redhat.thermostat.gateway.server.services.CoreServiceBuilderFactory;
+import com.redhat.thermostat.gateway.server.services.CoreServiceBuilderFactory.CoreServiceType;
 
 public class Start {
 
@@ -77,22 +75,14 @@ public class Start {
 
     private static void setListenConfig(CoreServerBuilder builder, ConfigurationFactory factory) {
         Configuration globalConfig = factory.createGlobalConfiguration();
-        Map<String, String> serverConfigMap = globalConfig.asMap();
-        String listenAddress = serverConfigMap.get(GlobalConfiguration.ConfigurationKey.IP.toString());
-        builder.setListenAddress(listenAddress);
-        int port = Integer.parseInt(serverConfigMap.get(GlobalConfiguration.ConfigurationKey.PORT.toString()));
-        builder.setListenPort(port);
+        builder.setServerConfiguration(globalConfig);
     }
 
     private static void addServices(CoreServerBuilder builder, ConfigurationFactory factory) {
         Configuration globalServicesConfig = factory.createGlobalServicesConfig();
-
-        Map<String, String> configProperties = globalServicesConfig.asMap();
-
-        for (Map.Entry<String, String> entry : configProperties.entrySet()) {
-            Path warPath = Paths.get(entry.getValue());
-            builder.addWebapp(entry.getKey(), warPath);
-        }
-
+        CoreServiceBuilderFactory builderFactory = new CoreServiceBuilderFactory();
+        CoreServiceBuilder coreServiceBuilder = builderFactory.createBuilder(CoreServiceType.WEB_ARCHIVE);
+        coreServiceBuilder.setConfiguration(globalServicesConfig);
+        builder.setServiceBuilder(coreServiceBuilder);
     }
 }
